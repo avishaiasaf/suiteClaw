@@ -173,6 +173,23 @@ vim secrets/secrets.enc.yaml
 
 Replace every `CHANGE_ME_*` with the generated values. Also set `anthropic_api_key` to your real Anthropic API key.
 
+**Important**: Now add the DB passwords to `.env` as well (same values you just set):
+
+```bash
+vim .env
+```
+
+Add:
+```
+N8N_DB_PASSWORD=<same as pg_n8n_password>
+MEMORY_DB_PASSWORD=<same as pg_memory_password>
+AUDIT_DB_PASSWORD=<same as pg_audit_password>
+```
+
+> **Why both places?** Docker secrets (`/run/secrets/`) are used by n8n at runtime, but
+> PostgreSQL's init scripts run as the `postgres` user which can't read Docker secrets.
+> The `.env` values are only used once during first boot to create the database users.
+
 Then encrypt and decrypt:
 
 ```bash
@@ -215,13 +232,17 @@ make logs
 ### What happens on first start:
 
 1. Traefik starts, requests Let's Encrypt certificate for your domain
-2. PostgreSQL initializes: creates `n8n`, `memory`, `audit` databases
+2. PostgreSQL initializes: creates `n8n`, `memory`, `audit` databases via init script
 3. pgvector extension is enabled on the `memory` database
 4. Audit tables + immutability triggers are created
 5. Redis starts with password authentication
-6. n8n main connects to PostgreSQL + Redis, starts the web UI
+6. n8n main connects to PostgreSQL + Redis, runs migrations, starts the web UI
 7. n8n workers connect and begin polling for jobs
 8. OPA loads the Tier 1/2 policies
+
+> **Note**: On first boot, you may see a harmless migration race condition error from one worker
+> (`relation "pk_workflow_entity_id" already exists`). This is expected when multiple n8n
+> instances run migrations simultaneously. The worker recovers automatically.
 
 ### Verify everything is healthy:
 
@@ -340,23 +361,24 @@ Total: ~4 vCPU, ~7GB RAM allocated (leaves headroom for OS).
 - Check logs: `make logs-n8n`
 - Verify PostgreSQL is healthy: `docker compose exec postgres pg_isready`
 
-### Redis healthcheck fails
-- The healthcheck needs auth. If it's failing, check:
-  ```bash
-  docker compose exec redis redis-cli -a "$(cat secrets/decrypted/redis_password)" ping
-  ```
+### PostgreSQL init scripts fail with "Permission denied"
+- This means Docker secrets aren't readable during init. Ensure DB passwords
+  are set in `.env` (`N8N_DB_PASSWORD`, `MEMORY_DB_PASSWORD`, `AUDIT_DB_PASSWORD`)
+- The init script reads from env vars, not from `/run/secrets/`
 
-### PostgreSQL init scripts fail
-- Check init logs: `docker compose logs postgres`
-- If the database users already exist (from a previous run), drop volumes:
+### PostgreSQL "Role already exists" or "Database already exists"
+- Init scripts only run on first boot (empty data dir). If you need to re-init:
   ```bash
-  docker compose down -v  # WARNING: destroys all data
+  docker compose down
+  docker volume rm suiteclaw_postgres-data
   make up-prod
   ```
 
-### "Permission denied" on secrets
-- Ensure `secrets/decrypted/` files are owned by the deploy user
-- Run: `chmod 600 secrets/decrypted/*`
+### Redis healthcheck fails
+- The healthcheck uses password auth. If failing, check:
+  ```bash
+  docker compose exec redis redis-cli -a "$(cat secrets/decrypted/redis_password)" ping
+  ```
 
 ### OPA returns empty/error
 - Verify policies are mounted: `docker compose exec opa ls /policies/`

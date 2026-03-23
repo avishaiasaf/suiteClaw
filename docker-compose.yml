@@ -41,14 +41,8 @@ x-n8n-common: &n8n-common
 services:
   # ─── Reverse Proxy ───────────────────────────────────────────
   traefik:
-    image: traefik:v3.3
+    image: traefik:v2.11
     container_name: sl-traefik
-    environment:
-      DOCKER_API_VERSION: "1.45"
-    command:
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     ports:
       - "80:80"
       - "443:443"
@@ -69,6 +63,12 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD_FILE: /run/secrets/pg_root_password
+      # Passed to init script (01-create-databases.sh) for user creation.
+      # Docker secrets are not readable by the postgres user during init,
+      # so these env vars are the workaround. Only used on first boot.
+      N8N_DB_PASSWORD: "${N8N_DB_PASSWORD}"
+      MEMORY_DB_PASSWORD: "${MEMORY_DB_PASSWORD}"
+      AUDIT_DB_PASSWORD: "${AUDIT_DB_PASSWORD}"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -144,10 +144,6 @@ services:
       - postgres
     deploy:
       replicas: ${N8N_WORKER_REPLICAS:-2}
-      resources:
-        limits:
-          cpus: "2.0"
-          memory: 4G
 
   # ─── OPA Policy Engine ──────────────────────────────────────
   opa:

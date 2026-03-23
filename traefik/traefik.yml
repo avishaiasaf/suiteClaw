@@ -22,6 +22,14 @@ providers:
     directory: /etc/traefik/dynamic
     watch: true
 
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "admin@solutionlabtech.com"
+      storage: /acme/acme.json
+      httpChallenge:
+        entryPoint: web
+
 log:
   level: INFO
 

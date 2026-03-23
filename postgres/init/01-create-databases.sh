@@ -1,19 +1,18 @@
 #!/bin/bash
 set -e
 
-# Read passwords from Docker secrets (mounted by docker-compose)
-N8N_PW=$(cat /run/secrets/pg_n8n_password)
-MEMORY_PW=$(cat /run/secrets/pg_memory_password)
-AUDIT_PW=$(cat /run/secrets/pg_audit_password)
+# Reads passwords from environment variables passed via docker-compose.yml.
+# Docker secrets (/run/secrets/) are NOT readable by the postgres user during init,
+# so we use env vars instead. These are only needed once — PG stores hashed passwords internally.
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE USER n8n WITH PASSWORD '$N8N_PW';
+    CREATE USER n8n WITH PASSWORD '$N8N_DB_PASSWORD';
     CREATE DATABASE n8n OWNER n8n;
 
-    CREATE USER memory_user WITH PASSWORD '$MEMORY_PW';
+    CREATE USER memory_user WITH PASSWORD '$MEMORY_DB_PASSWORD';
     CREATE DATABASE memory OWNER memory_user;
 
-    CREATE USER audit_user WITH PASSWORD '$AUDIT_PW';
+    CREATE USER audit_user WITH PASSWORD '$AUDIT_DB_PASSWORD';
     CREATE DATABASE audit OWNER audit_user;
 
     GRANT CONNECT ON DATABASE n8n TO n8n;
