@@ -1,0 +1,76 @@
+{
+  "models": {
+    "providers": {
+      "anthropic": {
+        "apiKey": "${ANTHROPIC_API_KEY}"
+      },
+      "openai": {
+        "apiKey": "${OPENAI_API_KEY}"
+      }
+    },
+    "defaults": {
+      "chat": "claude-sonnet-4-6",
+      "embeddings": "text-embedding-3-small"
+    }
+  },
+  "gateway": {
+    "bind": "0.0.0.0",
+    "port": 18789
+  },
+  "channels": {
+    "slack": {
+      "_comment": "Configure after creating Slack app: https://api.slack.com/apps",
+      "botToken": "${SLACK_BOT_TOKEN}",
+      "appToken": "${SLACK_APP_TOKEN}"
+    },
+    "telegram": {
+      "_comment": "Configure after creating bot via @BotFather",
+      "token": "${TELEGRAM_BOT_TOKEN}",
+      "mode": "polling"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "memorySearch": {
+        "enabled": true,
+        "provider": "openai",
+        "model": "text-embedding-3-small",
+        "query": {
+          "hybrid": {
+            "enabled": true,
+            "vectorWeight": 0.7,
+            "textWeight": 0.3,
+            "mmr": {
+              "enabled": true,
+              "lambda": 0.7
+            },
+            "temporalDecay": {
+              "enabled": true,
+              "halfLifeDays": 60
+            }
+          }
+        },
+        "chunk": {
+          "size": 400,
+          "overlap": 80
+        }
+      }
+    },
+    "list": [
+      {
+        "id": "solutionlab",
+        "name": "SL Agent",
+        "tools": {
+          "mcp": [
+            {
+              "_comment": "Connect to your existing n8n instance. Set the URL after configuring n8n MCP server.",
+              "name": "n8n-workflows",
+              "url": "${N8N_MCP_URL}",
+              "apiKey": "${N8N_API_KEY}"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

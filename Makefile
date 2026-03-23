@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs status decrypt-secrets encrypt-secrets backup-db restore-db health init
+.PHONY: help up down restart logs status decrypt-secrets encrypt-secrets backup-db health init shell
 
 COMPOSE = docker compose
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
@@ -8,24 +8,23 @@ help: ## Show this help
 
 # ─── Lifecycle ───────────────────────────────────────────────
 
-init: ## First-time setup: generate age keys, create .env, decrypt secrets
+init: ## First-time setup: generate age keys, create .env
 	@echo "=== Setting up age encryption keys ==="
 	@bash scripts/setup-age-keys.sh
 	@echo ""
 	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env from .env.example — edit it with your values"; fi
 	@echo ""
 	@echo "=== Next steps ==="
-	@echo "1. Edit .env with your domain and email"
+	@echo "1. Edit .env with your API keys and tokens"
 	@echo "2. Update .sops.yaml with your age public key"
 	@echo "3. Edit secrets/secrets.enc.yaml with real passwords"
-	@echo "4. Run: make encrypt-secrets"
-	@echo "5. Run: make decrypt-secrets"
-	@echo "6. Run: make up"
+	@echo "4. Run: make encrypt-secrets && make decrypt-secrets"
+	@echo "5. Run: make up-prod"
 
 up: ## Start all services (dev mode)
 	$(COMPOSE) up -d
 
-up-prod: ## Start all services (production mode with resource limits)
+up-prod: ## Start all services (production with resource limits)
 	$(COMPOSE_PROD) up -d
 
 down: ## Stop all services
@@ -37,8 +36,8 @@ restart: ## Restart all services
 logs: ## Tail all service logs
 	$(COMPOSE) logs -f --tail=100
 
-logs-n8n: ## Tail n8n main + worker logs
-	$(COMPOSE) logs -f --tail=100 n8n-main n8n-worker
+logs-openclaw: ## Tail OpenClaw logs
+	$(COMPOSE) logs -f --tail=100 openclaw
 
 logs-opa: ## Tail OPA logs
 	$(COMPOSE) logs -f --tail=100 opa
@@ -46,10 +45,19 @@ logs-opa: ## Tail OPA logs
 status: ## Show container status
 	$(COMPOSE) ps
 
-# ─── Scaling ─────────────────────────────────────────────────
+# ─── OpenClaw ────────────────────────────────────────────────
 
-scale-workers: ## Scale n8n workers (usage: make scale-workers N=3)
-	$(COMPOSE) up -d --scale n8n-worker=$(N)
+shell: ## Open a shell inside OpenClaw container
+	$(COMPOSE) exec openclaw sh
+
+dashboard: ## Get OpenClaw dashboard URL and token
+	$(COMPOSE) exec openclaw openclaw dashboard --no-open
+
+channels: ## List configured channels
+	$(COMPOSE) exec openclaw openclaw channels list
+
+doctor: ## Run OpenClaw diagnostics
+	$(COMPOSE) exec openclaw openclaw doctor
 
 # ─── Secrets ─────────────────────────────────────────────────
 
@@ -67,9 +75,6 @@ edit-secrets: ## Edit encrypted secrets in-place
 backup-db: ## Backup PostgreSQL databases
 	@bash scripts/backup-postgres.sh
 
-restore-db: ## Restore PostgreSQL from backup (usage: make restore-db FILE=backup.sql.gz)
-	@bash scripts/restore-postgres.sh $(FILE)
-
 db-shell: ## Open PostgreSQL shell
 	$(COMPOSE) exec postgres psql -U postgres
 
@@ -84,8 +89,5 @@ health: ## Run health checks on all services
 # ─── Cleanup ─────────────────────────────────────────────────
 
 clean: ## Remove all data volumes (DESTRUCTIVE)
-	@echo "WARNING: This will delete all data volumes!"
+	@echo "WARNING: This will delete all data volumes including OpenClaw memory!"
 	@read -p "Type 'yes' to confirm: " confirm && [ "$$confirm" = "yes" ] && $(COMPOSE) down -v || echo "Aborted."
-
-prune: ## Remove unused Docker resources
-	docker system prune -f

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Health check for all SL OpenClaw services
+# Health check for SL OpenClaw services
 set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
 NC='\033[0m'
 
 PASS=0
@@ -27,26 +26,21 @@ echo ""
 
 # Container status
 check "Traefik running" "docker compose ps traefik --format '{{.State}}' | grep -q running"
+check "OpenClaw running" "docker compose ps openclaw --format '{{.State}}' | grep -q running"
 check "PostgreSQL running" "docker compose ps postgres --format '{{.State}}' | grep -q running"
-check "Redis running" "docker compose ps redis --format '{{.State}}' | grep -q running"
-check "n8n Main running" "docker compose ps n8n-main --format '{{.State}}' | grep -q running"
-check "n8n Worker running" "docker compose ps n8n-worker --format '{{.State}}' | grep -q running"
 check "OPA running" "docker compose ps opa --format '{{.State}}' | grep -q running"
 
 echo ""
 
 # Service responsiveness
 check "PostgreSQL accepts connections" "docker compose exec -T postgres pg_isready -U postgres"
-check "Redis responds to ping" "docker compose exec -T redis redis-cli ping"
 check "OPA health endpoint" "docker compose exec -T opa wget -q --spider http://localhost:8181/health"
+check "OpenClaw gateway responding" "docker compose exec -T openclaw wget -q --spider http://localhost:18789/healthz 2>/dev/null || curl -sf http://localhost:18789/healthz >/dev/null 2>&1"
 
 echo ""
 
 # Database checks
-check "n8n database exists" "docker compose exec -T postgres psql -U postgres -lqt | grep -q n8n"
-check "memory database exists" "docker compose exec -T postgres psql -U postgres -lqt | grep -q memory"
 check "audit database exists" "docker compose exec -T postgres psql -U postgres -lqt | grep -q audit"
-check "pgvector extension enabled" "docker compose exec -T postgres psql -U postgres -d memory -c 'SELECT 1 FROM pg_extension WHERE extname = '\''vector'\'';' | grep -q 1"
 
 echo ""
 echo "=== Results: ${PASS} passed, ${FAIL} failed ==="
