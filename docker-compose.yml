@@ -1,5 +1,3 @@
-version: "3.8"
-
 x-n8n-common: &n8n-common
   image: n8nio/n8n:latest
   environment: &n8n-env
@@ -45,6 +43,12 @@ services:
   traefik:
     image: traefik:v3.3
     container_name: sl-traefik
+    environment:
+      DOCKER_API_VERSION: "1.45"
+    command:
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     ports:
       - "80:80"
       - "443:443"
@@ -98,7 +102,7 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/secrets/redis_password)\" ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
