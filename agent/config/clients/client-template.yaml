@@ -1,0 +1,49 @@
+# Client Configuration Template
+# Copy this file and rename to {client-id}.yaml
+
+client_id: ""                         # Unique identifier (kebab-case)
+name: ""                              # Display name
+status: active                        # active | paused | offboarded
+
+# NetSuite Connection
+netsuite:
+  account_id: ""                      # NetSuite account ID (e.g., TSTDRV0000000)
+  integration_user: ""                # Dedicated integration user email
+  oauth2:
+    credential_ref: ""                # SOPS secret key reference
+  mcp_connector:
+    enabled: false                    # Whether Oracle MCP Connector is configured
+    endpoint: ""                      # MCP endpoint URL
+  restlet:
+    url: ""                           # RESTlet deployment URL
+    script_id: ""
+    deploy_id: ""
+
+# Memory
+memory:
+  namespace: ""                       # Mem0 namespace (format: client:{client_id})
+  graphiti_group: ""                  # Graphiti group ID
+
+# Communication
+slack:
+  channel_id: ""                      # Primary Slack channel for this client
+  approver_channel_id: ""             # Channel for approval requests
+
+# Project Management
+clickup:
+  space_id: ""                        # ClickUp space for this client
+  default_list_id: ""                 # Default task list
+
+# Permissions
+permissions:
+  max_tier: 2                         # Maximum tier this client is enabled for
+  approvers:                          # Users who can approve agent actions
+    - user_id: ""
+      slack_id: ""
+      max_approval_tier: 4
+  thresholds:
+    auto_approve_below: 1000          # USD — auto-approve Tier 3 below this
+    require_dual_above: 10000         # USD — require 2 approvers above this
+    block_above: 100000               # USD — block and escalate above this
+  restricted_record_types: []         # Record types agent cannot touch
+  allowed_subsidiaries: []            # Subsidiary internal IDs agent can access

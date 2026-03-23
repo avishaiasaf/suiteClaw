@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "clients": [
+      {
+        "client_id": "pilot-client",
+        "name": "Pilot Client",
+        "netsuite_account_id": "TSTDRV0000000",
+        "max_tier": 2,
+        "memory_namespace": "client:pilot-client",
+        "approvers": [
+          {
+            "user_id": "admin@solutionlab.com",
+            "slack_id": "U000000001",
+            "max_approval_tier": 4
+          }
+        ],
+        "thresholds": {
+          "auto_approve_below": 1000,
+          "require_dual_above": 10000,
+          "block_above": 100000
+        },
+        "restricted_record_types": [],
+        "allowed_subsidiaries": ["1"]
+      }
+    ],
+    "global": {
+      "default_timeout_minutes": 60,
+      "deny_on_timeout": true,
+      "require_evidence_above_tier": 2
+    }
+  }
+}

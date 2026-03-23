@@ -1,0 +1,50 @@
+# Model routing configuration
+# Defines which Claude model handles each task type
+
+routing:
+  # Fast, cheap — intent classification, simple extraction
+  haiku:
+    model_id: claude-haiku-4-5-20251001
+    max_tokens: 1024
+    temperature: 0.0
+    tasks:
+      - intent_classification
+      - email_classification
+      - simple_extraction
+      - field_validation
+
+  # Balanced — complex reasoning, code generation, analysis
+  sonnet:
+    model_id: claude-sonnet-4-6
+    max_tokens: 8192
+    temperature: 0.1
+    tasks:
+      - suiteql_generation
+      - record_analysis
+      - report_generation
+      - email_drafting
+      - documentation
+      - suitescript_generation
+      - error_diagnosis
+
+  # Most capable — architectural decisions, complex debugging
+  opus:
+    model_id: claude-opus-4-6
+    max_tokens: 16384
+    temperature: 0.1
+    tasks:
+      - suitescript_complex
+      - architectural_decisions
+      - multi_step_planning
+      - complex_debugging
+      - revenue_recognition
+      - intercompany_operations
+
+# Escalation rules
+escalation:
+  # Escalate from sonnet to opus when:
+  sonnet_to_opus:
+    - confidence_below: 0.5
+    - task_complexity: high
+    - error_count_above: 2
+    - involves_financial: true

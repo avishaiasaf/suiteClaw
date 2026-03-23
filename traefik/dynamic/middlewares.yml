@@ -1,0 +1,25 @@
+http:
+  middlewares:
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        frameDeny: true
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow"
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1m
+
+    webhook-rate-limit:
+      rateLimit:
+        average: 30
+        burst: 10
+        period: 1m

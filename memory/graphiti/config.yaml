@@ -1,0 +1,17 @@
+# Graphiti / Zep Temporal Memory Configuration
+# Provides temporal knowledge graph for "who changed what when" queries
+
+graph_store:
+  provider: falkordb
+  config:
+    uri: redis://falkordb:6379
+    database: 0
+
+llm:
+  provider: anthropic
+  config:
+    model: claude-haiku-4-5-20251001
+    api_key_file: /run/secrets/anthropic_api_key
+
+# Group isolation: each client gets a separate graph group
+# group_id format: client:{client_id}

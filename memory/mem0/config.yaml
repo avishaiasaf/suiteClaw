@@ -1,0 +1,23 @@
+# Mem0 Configuration — Connects to PostgreSQL with pgvector
+
+vector_store:
+  provider: pgvector
+  config:
+    host: postgres
+    port: 5432
+    dbname: memory
+    user: memory_user
+    password_file: /run/secrets/pg_memory_password
+    embedding_model_dims: 1536
+    collection_name: agent_memories
+
+embedder:
+  provider: openai  # or anthropic when supported
+  config:
+    model: text-embedding-3-small
+    api_key_file: /run/secrets/openai_api_key
+
+# Memory hierarchy
+# user: client-specific knowledge (namespace: client:{client_id})
+# session: current task context
+# agent: accumulated NetSuite expertise (shared across clients)

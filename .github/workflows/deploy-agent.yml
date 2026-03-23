@@ -1,0 +1,36 @@
+name: Deploy Agent Stack
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker-compose.yml'
+      - 'docker-compose.prod.yml'
+      - 'traefik/**'
+      - 'postgres/**'
+      - 'opa/**'
+      - 'agent/**'
+      - 'memory/**'
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Hetzner
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            cd /opt/sl-openclaw
+            git pull origin main
+            bash secrets/decrypt.sh
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            sleep 10
+            bash scripts/health-check.sh

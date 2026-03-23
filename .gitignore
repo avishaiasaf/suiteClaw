@@ -1,0 +1,54 @@
+# Environment & Secrets
+.env
+.env.local
+.env.production
+secrets/*.yaml
+!secrets/secrets.enc.yaml
+*.key
+*.pem
+
+# SOPS decrypted files
+secrets/decrypted/
+
+# Traefik
+traefik/acme.json
+
+# n8n
+n8n/credentials/*
+!n8n/credentials/.gitkeep
+
+# Docker
+docker-compose.override.yml
+
+# PostgreSQL data
+postgres/data/
+
+# Redis data
+redis/data/
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Volumes (if mounted locally)
+volumes/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+dist/
+build/
+ledgerlm/suitelet-spa/dist/
+ledgerlm/extension/dist/

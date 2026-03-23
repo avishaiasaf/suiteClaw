@@ -1,0 +1,97 @@
+name: SuiteScript CI/CD
+
+on:
+  pull_request:
+    paths:
+      - 'netsuite/custom-scripts/**'
+      - 'netsuite/sdf-project/**'
+
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'Deploy target (sandbox or production)'
+        required: true
+        default: 'sandbox'
+        type: choice
+        options:
+          - sandbox
+          - production
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install SuiteCloud CLI
+        run: npm install -g @oracle/suitecloud-cli
+
+      - name: Validate SDF Project
+        working-directory: netsuite/sdf-project
+        run: suitecloud project:validate
+
+      - name: Comment validation results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## SDF Validation\n\nValidation passed successfully.'
+            })
+
+  deploy-sandbox:
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_target == 'sandbox'
+    runs-on: ubuntu-latest
+    environment: sandbox
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install SuiteCloud CLI
+        run: npm install -g @oracle/suitecloud-cli
+
+      - name: Deploy to Sandbox
+        working-directory: netsuite/sdf-project
+        env:
+          NS_ACCOUNT_ID: ${{ secrets.NS_SANDBOX_ACCOUNT_ID }}
+        run: |
+          suitecloud account:setup \
+            --account $NS_ACCOUNT_ID \
+            --authid sandbox-deploy
+          suitecloud project:deploy
+
+  deploy-production:
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_target == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install SuiteCloud CLI
+        run: npm install -g @oracle/suitecloud-cli
+
+      - name: Deploy to Production
+        working-directory: netsuite/sdf-project
+        env:
+          NS_ACCOUNT_ID: ${{ secrets.NS_PROD_ACCOUNT_ID }}
+        run: |
+          suitecloud account:setup \
+            --account $NS_ACCOUNT_ID \
+            --authid production-deploy
+          suitecloud project:deploy

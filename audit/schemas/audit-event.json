@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuditEvent",
+  "description": "Schema for SL OpenClaw audit log entries. SOX-compliant, immutable.",
+  "type": "object",
+  "required": ["agent_id", "client_id", "action_type", "tier", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Identifier of the agent instance"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Client identifier for multi-tenant isolation"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Human user who initiated or approved the action"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Conversation session identifier"
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Links related events across workflows"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": ["query", "read", "search", "report", "create", "update", "delete", "deploy", "approve", "reject", "draft", "send", "escalate"]
+    },
+    "tool_name": {
+      "type": "string",
+      "description": "MCP tool or RESTlet endpoint used"
+    },
+    "tier": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4,
+      "description": "Permission tier (1=read-only, 2=low-risk, 3=medium, 4=high-value)"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["requested", "policy_denied", "pending_approval", "approved", "rejected", "executed", "failed", "timeout"]
+    },
+    "request_payload": {
+      "type": "object",
+      "description": "What the agent requested"
+    },
+    "response_payload": {
+      "type": "object",
+      "description": "What was returned"
+    },
+    "before_state": {
+      "type": "object",
+      "description": "Record state before modification (Tier 3+)"
+    },
+    "after_state": {
+      "type": "object",
+      "description": "Record state after modification (Tier 3+)"
+    },
+    "policy_result": {
+      "type": "object",
+      "description": "OPA policy evaluation result"
+    },
+    "approvers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "string" },
+          "decision": { "type": "string", "enum": ["approved", "rejected"] },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "model_id": {
+      "type": "string",
+      "description": "Claude model used (e.g., claude-haiku-4-5)"
+    },
+    "prompt_tokens": { "type": "integer" },
+    "completion_tokens": { "type": "integer" },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "source_channel": {
+      "type": "string",
+      "enum": ["slack", "email", "webhook", "ledgerlm", "api", "scheduled"]
+    },
+    "duration_ms": { "type": "integer" },
+    "error_message": { "type": "string" },
+    "idempotency_key": {
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+}
